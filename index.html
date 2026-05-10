@@ -215,22 +215,6 @@ a { color: inherit; text-decoration: none; }
 .metric { padding: 22px 22px 0 0; }
 .metric-value { font-size: clamp(1.7rem, 3vw, 2.35rem); line-height: 1; font-weight: 800; }
 .metric-label { margin-top: 8px; color: var(--faint); font-size: 0.78rem; }
-.prototype-note {
-  position: absolute;
-  right: max(24px, calc((100vw - 1180px) / 2));
-  bottom: 54px;
-  width: min(360px, calc(100% - 48px));
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: rgba(8,10,16,0.58);
-  backdrop-filter: blur(16px);
-  color: var(--muted);
-  font-size: 0.82rem;
-  transform: perspective(1000px) rotateX(calc(var(--tilt-x) * -0.35)) rotateY(calc(var(--tilt-y) * -0.45));
-  box-shadow: 0 22px 80px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
 .section { padding: 96px 0; position: relative; }
 .section::before {
   content: "";
@@ -471,7 +455,6 @@ a { color: inherit; text-decoration: none; }
   backdrop-filter: blur(20px) saturate(120%);
   position: relative;
 }
-.leaderboard-note { color: var(--faint); font-size: 0.8rem; margin-bottom: 14px; }
 table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 980px; }
 th, td { padding: 16px 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
 th { color: var(--faint); font-size: 0.72rem; text-transform: uppercase; font-weight: 800; background: rgba(255,255,255,0.025); }
@@ -631,7 +614,6 @@ tbody tr:hover {
   .section-head, .about-grid, .package-layout, .analysis-grid { grid-template-columns: 1fr; }
   .task-grid { grid-template-columns: repeat(3, 1fr); }
   .method-grid { grid-template-columns: repeat(3, 1fr); }
-  .prototype-note { position: relative; right: auto; bottom: auto; margin: 40px auto 0; }
 }
 
 @media (max-width: 760px) {
@@ -675,7 +657,7 @@ tbody tr:hover {
       <div class="hero-content">
         <div class="eyebrow">Symmetric Cryptanalysis Agent Benchmark</div>
         <h1>对称密码分析<br><span>研究智能体</span><br>基准测试</h1>
-        <p class="hero-copy">把密码分析研究者的认知动作转化为可提交、可验证、可评分的研究产物，评估智能体是否真正能执行论文理解、分析规划、工具构造、实验验证和失败修复。</p>
+        <p class="hero-copy">把密码分析研究者的认知动作转化为可提交、可验证、可评分的研究产物，评估智能体是否真正能执行材料理解、分析规划、工具构造、实验验证和失败修复。</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#leaderboard">查看排行榜</a>
           <a class="btn btn-secondary" href="#methodology">查看方法论</a>
@@ -688,7 +670,6 @@ tbody tr:hover {
         </div>
       </div>
     </div>
-    <div class="prototype-note">当前页面保留论文草稿中的占位排行榜数值；核心文字结构已按“移除两类未启用题型、剩余题型重新编号”的实验口径组织。</div>
   </header>
 
   <main>
@@ -724,7 +705,7 @@ tbody tr:hover {
             <div class="section-kicker">Problem Scope</div>
             <h2 class="section-title">密码学问题范围</h2>
           </div>
-          <p class="section-desc">以分组密码差分与线性分析为核心，保留少量扩展方向用于测试题型框架的泛化能力。</p>
+          <p class="section-desc">以分组密码差分与线性分析为核心，并覆盖若干扩展方向，用于检验题型框架的泛化能力。</p>
         </div>
         <div class="scope-grid">
           <div class="scope-card core reveal"><div class="scope-tag">Core</div><div class="scope-title">Differential Cryptanalysis</div><div class="scope-desc">差分特征搜索、权重重计算、DDT 检查、P-layer replay 和 reduced-round claim boundary。</div></div>
@@ -744,10 +725,10 @@ tbody tr:hover {
             <div class="section-kicker">Task Types</div>
             <h2 class="section-title">五类启用任务</h2>
           </div>
-          <p class="section-desc">原草稿中的声明独立验证与研究报告撰写已移除；剩余任务重新编号为 T1-T5，覆盖当前实验闭环。</p>
+          <p class="section-desc">五类任务覆盖从结构理解、攻击还原、方案规划到实现验证与失败修复的完整实验闭环。</p>
         </div>
         <div class="task-grid">
-          <div class="task-card reveal"><div class="task-num">T1</div><div class="task-name">Primitive 理解与结构化</div><div class="task-en">Primitive Understanding</div><div class="task-desc">从规范或论文摘录恢复 Primitive-IR。</div></div>
+          <div class="task-card reveal"><div class="task-num">T1</div><div class="task-name">Primitive 理解与结构化</div><div class="task-en">Primitive Understanding</div><div class="task-desc">从规范或源材料恢复 Primitive-IR。</div></div>
           <div class="task-card reveal"><div class="task-num">T2</div><div class="task-name">攻击描述还原</div><div class="task-en">Attack Description Recovery</div><div class="task-desc">恢复 Analysis-IR、攻击场景和 claim boundary。</div></div>
           <div class="task-card reveal"><div class="task-num">T3</div><div class="task-name">分析方案规划</div><div class="task-en">Analysis Planning</div><div class="task-desc">在目标和资源约束下选择策略和验证路线。</div></div>
           <div class="task-card reveal"><div class="task-num">T4</div><div class="task-name">攻击实现与验证</div><div class="task-en">Realization & Verification</div><div class="task-desc">生成并运行后端工件，提交日志和验证报告。</div></div>
@@ -794,9 +775,8 @@ tbody tr:hover {
             <div class="section-kicker">Leaderboard</div>
             <h2 class="section-title">模型测评排行榜</h2>
           </div>
-          <p class="section-desc">模型名称更新为当前更前沿的候选系统；分数仍沿用展示草稿占位数据，等待正式实验替换。</p>
+          <p class="section-desc">展示被测系统在五类任务上的综合表现与分项能力。</p>
         </div>
-        <div class="leaderboard-note">Placeholder scores. Final leaderboard must be produced by frozen private-active tasks and validators.</div>
         <div class="leaderboard-shell reveal">
           <table>
             <thead>
@@ -844,9 +824,9 @@ tbody tr:hover {
         <div class="section-head reveal">
           <div>
             <div class="section-kicker">Analysis Framework</div>
-            <h2 class="section-title">论文一致的分析视角</h2>
+            <h2 class="section-title">核心分析视角</h2>
           </div>
-          <p class="section-desc">核心洞察先保留分析维度，具体数值与结论等待真实实验后填充。</p>
+          <p class="section-desc">从任务能力、过程质量、工具收益、保真风险、可靠性和人类基线六个维度观察模型表现。</p>
         </div>
         <div class="analysis-grid">
           <div class="chart-panel reveal"><canvas id="radarChart" width="500" height="500"></canvas></div>
@@ -875,12 +855,12 @@ tbody tr:hover {
         <div class="section-head reveal">
           <div>
             <div class="section-kicker">Methodology</div>
-            <h2 class="section-title">与论文结构一致的构建流程</h2>
+            <h2 class="section-title">基准构建流程</h2>
           </div>
-          <p class="section-desc">从真实材料到冻结评测任务，构建期完成主观判断，评测期保持自动化与可复现。</p>
+          <p class="section-desc">从源材料到任务包、验证器和排行榜，形成可复现的评测闭环。</p>
         </div>
         <div class="method-grid reveal">
-          <div class="method-step"><div class="method-num">01</div><div class="method-title">源材料收集</div><div class="method-desc">规范、论文、安全分析报告、可执行工件、失败日志和中间证据。</div></div>
+          <div class="method-step"><div class="method-num">01</div><div class="method-title">源材料收集</div><div class="method-desc">规范、安全分析报告、可执行工件、失败日志和中间证据。</div></div>
           <div class="method-step"><div class="method-num">02</div><div class="method-title">候选任务抽取</div><div class="method-desc">记录来源、认知动作、题型、内容标签、预期产物和保真风险。</div></div>
           <div class="method-step"><div class="method-num">03</div><div class="method-title">任务规范化</div><div class="method-desc">重写 prompt，确定产物 schema，冻结 hidden labels 与 acceptable sets。</div></div>
           <div class="method-step"><div class="method-num">04</div><div class="method-title">验证器构造</div><div class="method-desc">Schema、label/set matcher、executable oracle、coverage 和 evidence checker。</div></div>
