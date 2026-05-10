@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CryptoBench-SC — 对称密码分析智能体基准</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #05060a;
+  --bg-soft: #0a0c12;
+  --panel: rgba(12, 15, 23, 0.72);
+  --panel-solid: #0d1018;
+  --line: rgba(154, 166, 188, 0.16);
+  --line-strong: rgba(218, 226, 241, 0.28);
+  --text: #edf2fb;
+  --muted: #99a6ba;
+  --faint: #657188;
+  --blue: #5f96ff;
+  --cyan: #7dd3fc;
+  --green: #9be7c1;
+  --amber: #f5c16c;
+  --danger: #f59d9d;
+  --radius: 8px;
+  --shadow: 0 28px 90px rgba(0,0,0,0.42);
+  --ease: cubic-bezier(0.19, 1, 0.22, 1);
+  --mx: 50vw;
+  --my: 50vh;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+}
+
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% -20%, rgba(95,150,255,0.18), transparent 42%),
+    linear-gradient(180deg, #070911 0%, #05060a 44%, #080a0f 100%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+.page { position: relative; z-index: 1; }
+.container { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(5,6,10,0.70);
+  backdrop-filter: blur(22px);
+}
+.nav-inner {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.04);
+}
+.brand-mark img { width: 21px; height: 21px; opacity: 0.95; }
+.nav-links { display: flex; align-items: center; gap: 26px; list-style: none; color: var(--muted); font-size: 0.88rem; }
+.nav-links a:hover { color: var(--text); }
+
+.hero {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 112px 0 72px;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(95,150,255,0.18), transparent 26%),
+    linear-gradient(90deg, rgba(5,6,10,0.64) 0%, rgba(5,6,10,0.36) 48%, rgba(5,6,10,0.08) 100%),
+    url("crypto-prism-card.png") center / cover no-repeat;
+  transform-style: preserve-3d;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -7%;
+  background:
+    radial-gradient(ellipse at calc(var(--mx) + 5vw) calc(var(--my) - 8vh), rgba(125,211,252,0.18), transparent 28%),
+    radial-gradient(ellipse at 82% 24%, rgba(245,193,108,0.10), transparent 24%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 42%);
+  opacity: 0.74;
+  filter: blur(22px);
+  transform: translate3d(calc((var(--mx) - 50vw) * -0.018), calc((var(--my) - 50vh) * -0.018), 0);
+  transition: transform 0.18s ease-out;
+  pointer-events: none;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 92px 92px;
+  mask-image: radial-gradient(ellipse at var(--mx) var(--my), black 0%, rgba(0,0,0,0.65) 36%, transparent 78%);
+  transform: perspective(900px) rotateX(58deg) translateY(-28%);
+  transform-origin: center top;
+  opacity: 0.42;
+  pointer-events: none;
+}
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.76;
+  mix-blend-mode: screen;
+}
+.hero-ghost {
+  position: absolute;
+  left: 46%;
+  top: 20%;
+  transform: translate3d(calc((var(--mx) - 50vw) * -0.012), calc((var(--my) - 50vh) * -0.008), 0) translateX(-16%);
+  z-index: 0;
+  font-size: clamp(6rem, 18vw, 16rem);
+  font-weight: 800;
+  line-height: 0.85;
+  color: rgba(255,255,255,0.035);
+  white-space: nowrap;
+  user-select: none;
+  transition: transform 0.18s ease-out, opacity 0.18s ease-out;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 690px;
+  padding-top: 20px;
+  transform: perspective(1200px) rotateX(calc(var(--tilt-x) * -0.24)) rotateY(calc(var(--tilt-y) * -0.18));
+  transition: transform 0.16s ease-out;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-bottom: 24px;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--blue), transparent);
+}
+.hero h1 {
+  font-size: clamp(3.2rem, 7.5vw, 6.7rem);
+  line-height: 1.02;
+  font-weight: 820;
+  letter-spacing: 0;
+  max-width: 780px;
+}
+.hero h1 span { color: var(--blue); }
+.hero-copy {
+  margin-top: 26px;
+  max-width: 650px;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.45vw, 1.18rem);
+}
+.hero-actions { margin-top: 34px; display: flex; gap: 14px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  border: 1px solid var(--line-strong);
+  transition: transform 0.24s var(--ease), border-color 0.24s ease, background 0.24s ease;
+}
+.btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.48); }
+.btn-primary { background: var(--text); color: #080a0f; border-color: var(--text); }
+.btn-secondary { background: rgba(255,255,255,0.03); color: var(--text); }
+.hero-metrics {
+  margin-top: 72px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(90px, 1fr));
+  border-top: 1px solid var(--line);
+  max-width: 730px;
+}
+.metric { padding: 22px 22px 0 0; }
+.metric-value { font-size: clamp(1.7rem, 3vw, 2.35rem); line-height: 1; font-weight: 800; }
+.metric-label { margin-top: 8px; color: var(--faint); font-size: 0.78rem; }
+.prototype-note {
+  position: absolute;
+  right: max(24px, calc((100vw - 1180px) / 2));
+  bottom: 54px;
+  width: min(360px, calc(100% - 48px));
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(8,10,16,0.58);
+  backdrop-filter: blur(16px);
+  color: var(--muted);
+  font-size: 0.82rem;
+  transform: perspective(1000px) rotateX(calc(var(--tilt-x) * -0.35)) rotateY(calc(var(--tilt-y) * -0.45));
+  box-shadow: 0 22px 80px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.section { padding: 96px 0; position: relative; }
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.26;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(95,150,255,0.16), transparent 24%),
+    url("crypto-trails-card.png") center / cover no-repeat;
+  filter: blur(18px);
+  transform: translate3d(calc((var(--mx) - 50vw) * -0.006), calc((var(--my) - 50vh) * -0.006), 0) scale(1.04);
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 82%, transparent);
+}
+.section > .container { position: relative; z-index: 1; }
+.section.alt { background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.section-head { display: grid; grid-template-columns: 0.86fr 1fr; gap: 56px; margin-bottom: 42px; align-items: end; }
+.section-kicker { color: var(--blue); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; }
+.section-title { font-size: clamp(2rem, 4vw, 3.65rem); line-height: 1.08; font-weight: 800; }
+.section-desc { color: var(--muted); font-size: 1.02rem; max-width: 660px; }
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 24px;
+}
+.statement {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 28px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.078), rgba(255,255,255,0.02) 48%, rgba(0,0,0,0.18)),
+    var(--panel);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px) saturate(120%);
+}
+.statement p { color: var(--muted); margin-top: 14px; }
+.artifact-list {
+  display: grid;
+  gap: 10px;
+}
+.artifact {
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015) 50%, rgba(0,0,0,0.16)),
+    rgba(255,255,255,0.025);
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 16px 50px rgba(0,0,0,0.18);
+}
+.artifact-index { color: var(--blue); font-size: 0.78rem; font-weight: 800; }
+.artifact-title { font-weight: 700; }
+.artifact-desc { color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+
+.scope-grid, .task-grid, .insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.scope-card, .task-card, .insight-card, .package-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.018), transparent 38%),
+    rgba(2,3,6,0.86);
+  overflow: hidden;
+  backdrop-filter: blur(20px) saturate(80%);
+  box-shadow:
+    0 24px 90px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.055),
+    inset 0 -1px 0 rgba(0,0,0,0.34);
+  transform-style: preserve-3d;
+  position: relative;
+  --accent: var(--blue);
+  --accent-rgb: 95, 150, 255;
+  --card-art: url("crypto-prism-card.png");
+  --card-pos: center 28%;
+  --card-size: cover;
+  transition: transform 0.34s var(--ease), border-color 0.34s ease, box-shadow 0.34s ease, background 0.34s ease;
+}
+.scope-card > *, .task-card > *, .insight-card > *, .package-card > *,
+.statement > *, .artifact > *, .package-point > *, .method-step > *,
+.chart-panel > *, .legend-panel > *, .leaderboard-shell > * { position: relative; z-index: 2; }
+.scope-card::before, .task-card::before, .insight-card::before, .package-card::before,
+.statement::before, .artifact::before, .package-point::before, .method-step::before,
+.chart-panel::before, .legend-panel::before, .leaderboard-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--card-x, 50%) var(--card-y, 18%), rgba(var(--accent-rgb),0.35), transparent 34%),
+    linear-gradient(135deg, rgba(var(--accent-rgb),0.10), transparent 46%);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  z-index: 1;
+}
+.scope-card:hover::before, .task-card:hover::before, .insight-card:hover::before, .package-card:hover::before,
+.statement:hover::before, .artifact:hover::before, .package-point:hover::before, .method-step:hover::before,
+.chart-panel:hover::before, .legend-panel:hover::before, .leaderboard-shell:hover::before {
+  opacity: 1;
+}
+.scope-card::after, .task-card::after, .insight-card::after, .package-card::after, .package-point::after, .method-step::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.30;
+  filter: grayscale(1) saturate(0.05) brightness(0.58);
+  transition: opacity 0.36s ease, filter 0.36s ease, transform 0.42s var(--ease);
+  background:
+    linear-gradient(to bottom, rgba(2,3,6,0.05), rgba(2,3,6,0.10) 42%, rgba(2,3,6,0.86) 92%),
+    var(--card-art) var(--card-pos) / var(--card-size) no-repeat,
+    radial-gradient(circle at 72% 34%, rgba(var(--accent-rgb),0.38), transparent 18%),
+    linear-gradient(124deg, transparent 0 34%, rgba(255,255,255,0.18) 35%, transparent 38% 58%, rgba(255,255,255,0.12) 59%, transparent 62%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 18px);
+  mask-image: linear-gradient(to bottom, black 0%, black 56%, transparent 86%);
+}
+.scope-card:hover::after, .task-card:hover::after, .insight-card:hover::after, .package-card:hover::after,
+.package-point:hover::after, .method-step:hover::after {
+  opacity: 0.82;
+  filter: grayscale(0) saturate(1.5) brightness(1.04);
+  transform: scale(1.045) translate3d(calc((var(--card-x, 50%) - 50%) * 0.018), calc((var(--card-y, 50%) - 50%) * 0.018), 0);
+}
+.scope-card:hover, .task-card:hover, .insight-card:hover, .package-card:hover, .package-point:hover, .method-step:hover {
+  border-color: rgba(var(--accent-rgb),0.58);
+  background: rgba(3,5,10,0.90);
+  box-shadow:
+    0 34px 110px rgba(0,0,0,0.52),
+    0 0 60px rgba(var(--accent-rgb),0.12),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.scope-card:nth-child(2n), .task-card:nth-child(2n), .insight-card:nth-child(2n) { --accent: var(--green); --accent-rgb: 155, 231, 193; }
+.scope-card:nth-child(3n), .task-card:nth-child(3n), .insight-card:nth-child(3n) { --accent: var(--amber); --accent-rgb: 245, 193, 108; }
+.scope-card:nth-child(4n), .task-card:nth-child(4n), .insight-card:nth-child(4n) { --accent: var(--cyan); --accent-rgb: 125, 211, 252; }
+.scope-card:nth-child(5n), .task-card:nth-child(5n), .insight-card:nth-child(5n) { --accent: var(--danger); --accent-rgb: 245, 157, 157; }
+.scope-card:nth-child(1) { --card-art: url("crypto-trails-card.png"); --card-pos: 46% 24%; --card-size: 118%; }
+.scope-card:nth-child(2) { --card-art: url("crypto-linear-card.png"); --card-pos: 50% 28%; --card-size: 124%; }
+.scope-card:nth-child(3) { --card-art: url("crypto-debug-card.png"); --card-pos: 48% 26%; --card-size: 120%; }
+.scope-card:nth-child(4) { --card-art: url("crypto-integral-card.png"); --card-pos: 50% 26%; --card-size: 122%; }
+.scope-card:nth-child(5) { --card-art: url("crypto-boomerang-card.png"); --card-pos: 50% 28%; --card-size: 120%; }
+.scope-card:nth-child(6) { --card-art: url("crypto-proof-card.png"); --card-pos: 50% 24%; --card-size: 118%; }
+.task-card:nth-child(1) { --card-art: url("crypto-sbox-card.png"); --card-pos: 50% 24%; --card-size: 126%; }
+.task-card:nth-child(2) { --card-art: url("crypto-orb-card.png"); --card-pos: 50% 22%; --card-size: 118%; }
+.task-card:nth-child(3) { --card-art: url("crypto-prism-card.png"); --card-pos: 56% 28%; --card-size: 126%; }
+.task-card:nth-child(4) { --card-art: url("crypto-trails-card.png"); --card-pos: 48% 24%; --card-size: 124%; }
+.task-card:nth-child(5) { --card-art: url("crypto-debug-card.png"); --card-pos: 50% 26%; --card-size: 126%; }
+.insight-card:nth-child(1) { --card-art: url("crypto-linear-card.png"); --card-pos: 48% 24%; --card-size: 124%; }
+.insight-card:nth-child(2) { --card-art: url("crypto-proof-card.png"); --card-pos: 50% 26%; --card-size: 118%; }
+.insight-card:nth-child(3) { --card-art: url("crypto-prism-card.png"); --card-pos: 58% 30%; --card-size: 130%; }
+.insight-card:nth-child(4) { --card-art: url("crypto-debug-card.png"); --card-pos: 52% 24%; --card-size: 122%; }
+.insight-card:nth-child(5) { --card-art: url("crypto-boomerang-card.png"); --card-pos: 45% 28%; --card-size: 126%; }
+.insight-card:nth-child(6) { --card-art: url("crypto-orb-card.png"); --card-pos: 48% 20%; --card-size: 116%; }
+.scope-card:nth-child(odd)::after { mask-image: linear-gradient(to bottom, black 0%, black 52%, transparent 86%); }
+.scope-card:nth-child(even)::after { mask-image: radial-gradient(ellipse at 50% 22%, black 0%, black 42%, transparent 80%); }
+.task-card:nth-child(even)::after { mask-image: linear-gradient(to bottom, black 0%, black 48%, transparent 84%); }
+.insight-card:nth-child(3n)::after { mask-image: radial-gradient(ellipse at 62% 22%, black 0%, black 44%, transparent 82%); }
+.scope-card { min-height: 238px; padding: 138px 22px 22px; position: relative; }
+.scope-card.core { border-color: rgba(255,255,255,0.18); background: rgba(2,3,6,0.90); }
+.scope-tag { color: var(--faint); font-size: 0.76rem; font-weight: 800; margin-bottom: 20px; }
+.scope-title { font-size: 1.15rem; font-weight: 780; color: rgba(237,242,251,0.92); transition: color 0.3s ease; }
+.scope-desc { color: var(--muted); font-size: 0.86rem; margin-top: 10px; }
+.scope-card:hover .scope-title, .task-card:hover .task-name, .insight-card:hover .insight-title { color: #fff; }
+
+.task-grid { grid-template-columns: repeat(5, 1fr); }
+.task-card { padding: 110px 16px 20px; min-height: 256px; }
+.task-num { color: var(--accent); font-weight: 800; font-size: 0.78rem; transition: color 0.3s ease; }
+.task-name { margin-top: 18px; font-weight: 780; font-size: 1.02rem; }
+.task-en { color: var(--faint); font-size: 0.72rem; margin-top: 6px; min-height: 34px; }
+.task-desc { color: var(--muted); font-size: 0.78rem; margin-top: 18px; }
+
+.package-layout {
+  display: grid;
+  grid-template-columns: 0.86fr 1.14fr;
+  gap: 20px;
+}
+.package-card { padding: 22px; --accent: var(--cyan); --accent-rgb: 125, 211, 252; }
+.tree {
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.86rem;
+  color: #cbd5e1;
+  line-height: 1.9;
+  white-space: pre;
+  overflow-x: auto;
+}
+.package-points { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.package-point {
+  padding: 82px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01) 52%, rgba(0,0,0,0.18)),
+    rgba(3,4,8,0.82);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 16px 50px rgba(0,0,0,0.18);
+  --accent: var(--green);
+  --accent-rgb: 155, 231, 193;
+  --card-art: url("crypto-orb-card.png");
+  --card-pos: center 24%;
+  --card-size: cover;
+  transition: transform 0.34s var(--ease), background 0.34s ease, border-color 0.34s ease, box-shadow 0.34s ease;
+}
+.package-point:nth-child(1) { --accent: var(--green); --accent-rgb: 155, 231, 193; --card-art: url("crypto-orb-card.png"); --card-pos: 50% 20%; --card-size: 120%; }
+.package-point:nth-child(2) { --accent: var(--blue); --accent-rgb: 95, 150, 255; --card-art: url("crypto-prism-card.png"); --card-pos: 60% 26%; --card-size: 132%; }
+.package-point:nth-child(3) { --accent: var(--amber); --accent-rgb: 245, 193, 108; --card-art: url("crypto-trails-card.png"); --card-pos: 45% 24%; --card-size: 128%; }
+.package-point:nth-child(4) { --accent: var(--cyan); --accent-rgb: 125, 211, 252; --card-art: url("crypto-proof-card.png"); --card-pos: 50% 24%; --card-size: 120%; }
+.package-point::after {
+  background:
+    linear-gradient(to bottom, rgba(2,3,6,0.08), rgba(2,3,6,0.84) 90%),
+    var(--card-art) var(--card-pos) / var(--card-size) no-repeat,
+    radial-gradient(circle at 78% 24%, rgba(var(--accent-rgb),0.34), transparent 18%),
+    linear-gradient(90deg, rgba(255,255,255,0.13) 0 1px, transparent 1px 18px),
+    linear-gradient(0deg, rgba(255,255,255,0.11) 0 1px, transparent 1px 18px);
+}
+.package-point strong { display: block; }
+.package-point span { display: block; color: var(--muted); font-size: 0.82rem; margin-top: 6px; }
+
+.leaderboard-shell {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.018) 54%, rgba(0,0,0,0.18)),
+    rgba(10,13,20,0.74);
+  overflow-x: auto;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px) saturate(120%);
+  position: relative;
+}
+.leaderboard-note { color: var(--faint); font-size: 0.8rem; margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 980px; }
+th, td { padding: 16px 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { color: var(--faint); font-size: 0.72rem; text-transform: uppercase; font-weight: 800; background: rgba(255,255,255,0.025); }
+tr:last-child td { border-bottom: none; }
+tbody tr {
+  filter: grayscale(0.75) saturate(0.35);
+  transition: filter 0.28s ease, background 0.28s ease;
+}
+tbody tr:hover {
+  filter: grayscale(0) saturate(1.18);
+  background:
+    radial-gradient(circle at var(--card-x, 50%) 50%, rgba(95,150,255,0.12), transparent 28%),
+    rgba(255,255,255,0.026);
+}
+.rank { font-weight: 800; font-size: 1.12rem; }
+.model-cell { display: flex; align-items: center; gap: 12px; min-width: 238px; }
+.model-icon {
+  width: 36px; height: 36px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  background: #fff;
+  color: #080a0f;
+  border: 1px solid rgba(255,255,255,0.28);
+  flex-shrink: 0;
+}
+.model-icon img { width: 100%; height: 100%; object-fit: cover; }
+.model-icon.human { background: linear-gradient(135deg, var(--amber), #fff4d7); font-size: 0.68rem; font-weight: 900; }
+.model-name { font-weight: 760; }
+.model-type { color: var(--muted); font-size: 0.76rem; margin-top: 2px; }
+.score-wrap { display: flex; align-items: center; gap: 10px; min-width: 130px; }
+.bar { flex: 1; height: 5px; border-radius: 99px; background: rgba(255,255,255,0.09); overflow: hidden; }
+.fill { width: var(--w); height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); border-radius: inherit; }
+.score { min-width: 42px; font-weight: 800; }
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 26px;
+  align-items: center;
+}
+.chart-panel, .legend-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.018) 52%, rgba(0,0,0,0.16)),
+    rgba(10,13,20,0.72);
+  padding: 22px;
+  box-shadow: 0 22px 70px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px) saturate(120%);
+  position: relative;
+  overflow: hidden;
+}
+.chart-panel canvas { width: 100%; max-width: 500px; aspect-ratio: 1; margin: 0 auto; display: block; }
+.legend-list { display: grid; gap: 10px; }
+.legend-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.012);
+  color: rgba(237,242,251,0.62);
+  filter: grayscale(1) saturate(0.08);
+  transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease, filter 0.3s ease, transform 0.3s var(--ease);
+}
+.legend-item:hover, .legend-item.active {
+  border-color: rgba(255,255,255,0.42);
+  background:
+    radial-gradient(circle at 18% 50%, color-mix(in srgb, var(--c), transparent 72%), transparent 30%),
+    rgba(255,255,255,0.035);
+  color: #fff;
+  filter: grayscale(0) saturate(1.25);
+  transform: translateX(4px);
+}
+.legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 rgba(255,255,255,0);
+  transition: box-shadow 0.3s ease, transform 0.3s var(--ease);
+}
+.legend-item:hover .legend-swatch, .legend-item.active .legend-swatch {
+  transform: scale(1.35);
+  box-shadow: 0 0 26px var(--c);
+}
+.legend-label { flex: 1; font-weight: 700; }
+.legend-score { color: var(--muted); font-weight: 800; }
+
+.insight-card { padding: 108px 22px 22px; min-height: 238px; }
+.insight-card::after {
+  background:
+    linear-gradient(to bottom, rgba(2,3,6,0.06), rgba(2,3,6,0.82) 90%),
+    var(--card-art) center 28% / cover no-repeat,
+    radial-gradient(circle at 74% 28%, rgba(var(--accent-rgb),0.34), transparent 20%),
+    repeating-radial-gradient(circle at 28% 34%, rgba(255,255,255,0.13) 0 1px, transparent 1px 16px),
+    linear-gradient(128deg, transparent 0 28%, rgba(255,255,255,0.15) 29%, transparent 33% 48%, rgba(255,255,255,0.12) 49%, transparent 52%);
+}
+.insight-num { color: var(--accent); font-size: 0.78rem; font-weight: 900; margin-bottom: 24px; }
+.insight-title { font-weight: 780; font-size: 1.02rem; }
+.insight-desc { color: var(--muted); font-size: 0.84rem; margin-top: 10px; }
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--line);
+}
+.method-step {
+  min-height: 210px;
+  padding: 102px 20px 20px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008) 50%, rgba(0,0,0,0.22)),
+    rgba(3,4,8,0.84);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+  --accent: var(--blue);
+  --accent-rgb: 95, 150, 255;
+  --card-art: url("crypto-prism-card.png");
+  --card-pos: center 24%;
+  --card-size: cover;
+  transition: transform 0.34s var(--ease), background 0.34s ease, border-color 0.34s ease;
+}
+.method-step:nth-child(1) { --accent: var(--blue); --accent-rgb: 95, 150, 255; --card-art: url("crypto-sbox-card.png"); --card-pos: 50% 22%; --card-size: 130%; }
+.method-step:nth-child(2) { --accent: var(--green); --accent-rgb: 155, 231, 193; --card-art: url("crypto-orb-card.png"); --card-pos: 48% 22%; --card-size: 120%; }
+.method-step:nth-child(3) { --accent: var(--amber); --accent-rgb: 245, 193, 108; --card-art: url("crypto-linear-card.png"); --card-pos: 52% 26%; --card-size: 132%; }
+.method-step:nth-child(4) { --accent: var(--cyan); --accent-rgb: 125, 211, 252; --card-art: url("crypto-proof-card.png"); --card-pos: 50% 22%; --card-size: 124%; }
+.method-step:nth-child(5) { --accent: var(--danger); --accent-rgb: 245, 157, 157; --card-art: url("crypto-debug-card.png"); --card-pos: 48% 24%; --card-size: 130%; }
+.method-step:nth-child(6) { --accent: var(--cyan); --accent-rgb: 125, 211, 252; --card-art: url("crypto-boomerang-card.png"); --card-pos: 54% 26%; --card-size: 126%; }
+.method-step::after {
+  background:
+    linear-gradient(to bottom, rgba(2,3,6,0.06), rgba(2,3,6,0.86) 90%),
+    var(--card-art) var(--card-pos) / var(--card-size) no-repeat,
+    radial-gradient(circle at 72% 26%, rgba(var(--accent-rgb),0.32), transparent 18%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.13) 0 1px, transparent 1px 13px),
+    linear-gradient(132deg, transparent 0 35%, rgba(255,255,255,0.14) 36%, transparent 40%);
+}
+.method-num { color: var(--accent); font-weight: 900; font-size: 0.78rem; }
+.method-title { margin-top: 18px; font-weight: 780; }
+.method-desc { color: var(--muted); font-size: 0.8rem; margin-top: 10px; }
+
+.footer { padding: 54px 0 34px; color: var(--faint); border-top: 1px solid var(--line); }
+.footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.footer-links { display: flex; list-style: none; gap: 18px; font-size: 0.82rem; }
+
+.reveal { opacity: 1; transform: none; transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+.js-ready .reveal { opacity: 0; transform: translateY(26px); }
+.js-ready .reveal.visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 1060px) {
+  .section-head, .about-grid, .package-layout, .analysis-grid { grid-template-columns: 1fr; }
+  .task-grid { grid-template-columns: repeat(3, 1fr); }
+  .method-grid { grid-template-columns: repeat(3, 1fr); }
+  .prototype-note { position: relative; right: auto; bottom: auto; margin: 40px auto 0; }
+}
+
+@media (max-width: 760px) {
+  .container, .nav-inner { width: min(100% - 32px, 1180px); }
+  .nav-links { display: none; }
+  .hero { padding-top: 96px; }
+  .hero-metrics, .scope-grid, .task-grid, .insight-grid, .package-points, .method-grid { grid-template-columns: 1fr; }
+  .metric { padding-right: 0; }
+  .section { padding: 68px 0; }
+  .hero-ghost { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .hero-canvas { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark"><img src="logo.png" alt="CryptoBench-SC"></span>
+        <span>CryptoBench-SC</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#scope">范围</a></li>
+        <li><a href="#tasks">题型</a></li>
+        <li><a href="#package">任务包</a></li>
+        <li><a href="#leaderboard">排行榜</a></li>
+        <li><a href="#methodology">方法</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    <div class="hero-ghost">CRYPTOBENCH-SC</div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="eyebrow">Symmetric Cryptanalysis Agent Benchmark</div>
+        <h1>对称密码分析<br><span>研究智能体</span><br>基准测试</h1>
+        <p class="hero-copy">把密码分析研究者的认知动作转化为可提交、可验证、可评分的研究产物，评估智能体是否真正能执行论文理解、分析规划、工具构造、实验验证和失败修复。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#leaderboard">查看排行榜</a>
+          <a class="btn btn-secondary" href="#methodology">查看方法论</a>
+        </div>
+        <div class="hero-metrics" aria-label="benchmark metrics">
+          <div class="metric"><div class="metric-value">180</div><div class="metric-label">任务候选池</div></div>
+          <div class="metric"><div class="metric-value">5</div><div class="metric-label">启用题型</div></div>
+          <div class="metric"><div class="metric-value">6</div><div class="metric-label">内容标签</div></div>
+          <div class="metric"><div class="metric-value">4x</div><div class="metric-label">独立重复运行</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="prototype-note">当前页面保留论文草稿中的占位排行榜数值；核心文字结构已按“移除两类未启用题型、剩余题型重新编号”的实验口径组织。</div>
+  </header>
+
+  <main>
+    <section class="section" id="about">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Overview</div>
+            <h2 class="section-title">评测对象从答案转向研究产物</h2>
+          </div>
+          <p class="section-desc">CryptoBench-SC 不要求暴露隐藏思维链，而要求智能体提交可验证的外显工件：IR、策略、后端模型、执行日志、验证报告和修复记录。</p>
+        </div>
+        <div class="about-grid">
+          <div class="statement reveal">
+            <h3>核心构念</h3>
+            <p>现有密码学评测多测单轮问答或孤立解题。对称密码分析智能体的关键能力则体现在完整研究工作流：理解对象、形式化目标、选择策略、调用工具、验证结果、定位失败并保持证据边界。</p>
+            <p>因此，本基准把“是否会密码学”拆成一组可观察节点，并用确定性验证器、可执行 oracle 和保真度约束进行评分。</p>
+          </div>
+          <div class="artifact-list reveal">
+            <div class="artifact"><div class="artifact-index">IR</div><div><div class="artifact-title">Primitive / Analysis IR</div><div class="artifact-desc">描述分析对象、攻击目标、轮数、场景和 claim boundary。</div></div></div>
+            <div class="artifact"><div class="artifact-index">Plan</div><div><div class="artifact-title">Strategy Artifact</div><div class="artifact-desc">记录后端选择、复杂度意识、验证方案和禁止 shortcut。</div></div></div>
+            <div class="artifact"><div class="artifact-index">Run</div><div><div class="artifact-title">Executable Artifact</div><div class="artifact-desc">包含 OCP/CLAASP/MILP/SAT/CP 工件、日志和 solver status。</div></div></div>
+            <div class="artifact"><div class="artifact-index">Fix</div><div><div class="artifact-title">Diagnosis & Repair</div><div class="artifact-desc">说明失败根因、修复动作，并重新验证语义保持。</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="scope">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Problem Scope</div>
+            <h2 class="section-title">密码学问题范围</h2>
+          </div>
+          <p class="section-desc">以分组密码差分与线性分析为核心，保留少量扩展方向用于测试题型框架的泛化能力。</p>
+        </div>
+        <div class="scope-grid">
+          <div class="scope-card core reveal"><div class="scope-tag">Core</div><div class="scope-title">Differential Cryptanalysis</div><div class="scope-desc">差分特征搜索、权重重计算、DDT 检查、P-layer replay 和 reduced-round claim boundary。</div></div>
+          <div class="scope-card core reveal"><div class="scope-tag">Core</div><div class="scope-title">Linear Cryptanalysis</div><div class="scope-desc">线性近似、相关/偏差估计、线性层一致性和 solver 证书检查。</div></div>
+          <div class="scope-card reveal"><div class="scope-tag">Extension</div><div class="scope-title">Impossible Differential</div><div class="scope-desc">不可能路径、矛盾传播条件和可验证的区分器边界。</div></div>
+          <div class="scope-card reveal"><div class="scope-tag">Extension</div><div class="scope-title">Integral / Division Property</div><div class="scope-desc">积分性质、division property 传播和选择明文假设。</div></div>
+          <div class="scope-card reveal"><div class="scope-tag">Extension</div><div class="scope-title">Boomerang / Related-key</div><div class="scope-desc">boomerang 结构、相关密钥模型和攻击场景保真约束。</div></div>
+          <div class="scope-card reveal"><div class="scope-tag">Extension</div><div class="scope-title">Key-recovery Extension</div><div class="scope-desc">子密钥猜测范围、候选集合、复杂度估计和是否优于穷举。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tasks">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Task Types</div>
+            <h2 class="section-title">五类启用任务</h2>
+          </div>
+          <p class="section-desc">原草稿中的声明独立验证与研究报告撰写已移除；剩余任务重新编号为 T1-T5，覆盖当前实验闭环。</p>
+        </div>
+        <div class="task-grid">
+          <div class="task-card reveal"><div class="task-num">T1</div><div class="task-name">Primitive 理解与结构化</div><div class="task-en">Primitive Understanding</div><div class="task-desc">从规范或论文摘录恢复 Primitive-IR。</div></div>
+          <div class="task-card reveal"><div class="task-num">T2</div><div class="task-name">攻击描述还原</div><div class="task-en">Attack Description Recovery</div><div class="task-desc">恢复 Analysis-IR、攻击场景和 claim boundary。</div></div>
+          <div class="task-card reveal"><div class="task-num">T3</div><div class="task-name">分析方案规划</div><div class="task-en">Analysis Planning</div><div class="task-desc">在目标和资源约束下选择策略和验证路线。</div></div>
+          <div class="task-card reveal"><div class="task-num">T4</div><div class="task-name">攻击实现与验证</div><div class="task-en">Realization & Verification</div><div class="task-desc">生成并运行后端工件，提交日志和验证报告。</div></div>
+          <div class="task-card reveal"><div class="task-num">T5</div><div class="task-name">失败诊断与修复</div><div class="task-en">Diagnosis & Repair</div><div class="task-desc">根据失败脚本与日志定位根因，修复且不改语义。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="package">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Task Package</div>
+            <h2 class="section-title">从题目到可验证对象</h2>
+          </div>
+          <p class="section-desc">每道题都被组织为任务包。构建期完成标签冻结与验证器校准，评测期只做自动评分。</p>
+        </div>
+        <div class="package-layout">
+          <div class="package-card reveal"><div class="tree">Task Package
+├── meta.yaml
+├── prompt.md
+├── source/
+├── canonical/
+├── evaluation/
+│   ├── validator_schema.py
+│   ├── validator_consistency.py
+│   ├── validator_backend.py
+│   └── hidden_oracle/
+└── review/</div></div>
+          <div class="package-points reveal">
+            <div class="package-point"><strong>Visible Input</strong><span>题面、源材料、工具预算和输出格式。</span></div>
+            <div class="package-point"><strong>Frozen Labels</strong><span>唯一答案字段、可接受集合、必需元素和禁止元素。</span></div>
+            <div class="package-point"><strong>Validator Map</strong><span>每个评分字段都能追溯到对应验证器。</span></div>
+            <div class="package-point"><strong>Audit Record</strong><span>专家审查、pilot 校准和版本冻结记录。</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="leaderboard">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Leaderboard</div>
+            <h2 class="section-title">模型测评排行榜</h2>
+          </div>
+          <p class="section-desc">模型名称更新为当前更前沿的候选系统；分数仍沿用展示草稿占位数据，等待正式实验替换。</p>
+        </div>
+        <div class="leaderboard-note">Placeholder scores. Final leaderboard must be produced by frozen private-active tasks and validators.</div>
+        <div class="leaderboard-shell reveal">
+          <table>
+            <thead>
+              <tr><th>#</th><th>模型 / 智能体</th><th>总体分</th><th>T1 理解</th><th>T2 还原</th><th>T3 规划</th><th>T4 实现</th><th>T5 修复</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="rank">1</td>
+                <td><div class="model-cell"><div class="model-icon human">H</div><div><div class="model-name">Human Expert</div><div class="model-type">密码学专家基准</div></div></div></td>
+                <td><div class="score-wrap"><div class="bar"><div class="fill" style="--w:82.7%"></div></div><span class="score">82.7</span></div></td>
+                <td>91.4</td><td>85.2</td><td>86.1</td><td>79.6</td><td>75.8</td>
+              </tr>
+              <tr>
+                <td class="rank">2</td>
+                <td><div class="model-cell"><div class="model-icon"><img src="https://openai.com/favicon.ico" alt="OpenAI"></div><div><div class="model-name">GPT-5.5 Agent</div><div class="model-type">OpenAI 全工具智能体</div></div></div></td>
+                <td><div class="score-wrap"><div class="bar"><div class="fill" style="--w:41.8%"></div></div><span class="score">41.8</span></div></td>
+                <td>66.5</td><td>49.1</td><td>43.7</td><td>38.2</td><td>24.3</td>
+              </tr>
+              <tr>
+                <td class="rank">3</td>
+                <td><div class="model-cell"><div class="model-icon"><img src="https://www.anthropic.com/favicon.ico" alt="Anthropic"></div><div><div class="model-name">Claude Opus 4.7 Agent</div><div class="model-type">Anthropic 全工具智能体</div></div></div></td>
+                <td><div class="score-wrap"><div class="bar"><div class="fill" style="--w:40.9%"></div></div><span class="score">40.9</span></div></td>
+                <td>62.7</td><td>46.8</td><td>39.5</td><td>41.1</td><td>28.7</td>
+              </tr>
+              <tr>
+                <td class="rank">4</td>
+                <td><div class="model-cell"><div class="model-icon"><img src="https://www.google.com/favicon.ico" alt="Google"></div><div><div class="model-name">Gemini 3.1 Pro Agent</div><div class="model-type">Google 工具辅助智能体</div></div></div></td>
+                <td><div class="score-wrap"><div class="bar"><div class="fill" style="--w:33.1%"></div></div><span class="score">33.1</span></div></td>
+                <td>55.2</td><td>39.4</td><td>32.8</td><td>33.6</td><td>19.4</td>
+              </tr>
+              <tr>
+                <td class="rank">5</td>
+                <td><div class="model-cell"><div class="model-icon"><img src="https://www.deepseek.com/favicon.ico" alt="DeepSeek"></div><div><div class="model-name">DeepSeek-V4 Agent</div><div class="model-type">开源前沿智能体</div></div></div></td>
+                <td><div class="score-wrap"><div class="bar"><div class="fill" style="--w:24.6%"></div></div><span class="score">24.6</span></div></td>
+                <td>51.7</td><td>32.6</td><td>29.1</td><td>10.3</td><td>7.9</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="analysis">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Analysis Framework</div>
+            <h2 class="section-title">论文一致的分析视角</h2>
+          </div>
+          <p class="section-desc">核心洞察先保留分析维度，具体数值与结论等待真实实验后填充。</p>
+        </div>
+        <div class="analysis-grid">
+          <div class="chart-panel reveal"><canvas id="radarChart" width="500" height="500"></canvas></div>
+          <div class="legend-panel reveal">
+            <div class="legend-list">
+              <div class="legend-item active" data-model="0"><span class="legend-swatch" style="--c:#5f96ff"></span><span class="legend-label">GPT-5.5 Agent</span><span class="legend-score">41.8</span></div>
+              <div class="legend-item" data-model="1"><span class="legend-swatch" style="--c:#9be7c1"></span><span class="legend-label">Claude Opus 4.7 Agent</span><span class="legend-score">40.9</span></div>
+              <div class="legend-item" data-model="2"><span class="legend-swatch" style="--c:#f5c16c"></span><span class="legend-label">Gemini 3.1 Pro Agent</span><span class="legend-score">33.1</span></div>
+              <div class="legend-item" data-model="3"><span class="legend-swatch" style="--c:#f59d9d"></span><span class="legend-label">DeepSeek-V4 Agent</span><span class="legend-score">24.6</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="insight-grid" style="margin-top:20px;">
+          <div class="insight-card reveal"><div class="insight-num">A1</div><div class="insight-title">题型能力分解</div><div class="insight-desc">比较 T1-T5 的得分差异，定位理解、规划、构造与修复的能力边界。</div></div>
+          <div class="insight-card reveal"><div class="insight-num">A2</div><div class="insight-title">过程评分贡献</div><div class="insight-desc">分析 final-only 与分层评分的差异，识别偶然正确但证据链不足的提交。</div></div>
+          <div class="insight-card reveal"><div class="insight-num">A3</div><div class="insight-title">工具配置影响</div><div class="insight-desc">比较 model-only、tool-assisted 与 full-agent 在 T4/T5 上的收益。</div></div>
+          <div class="insight-card reveal"><div class="insight-num">A4</div><div class="insight-title">保真度惩罚</div><div class="insight-desc">统计降轮、改攻击模型、误读 solver status 和 overclaim 等问题。</div></div>
+          <div class="insight-card reveal"><div class="insight-num">A5</div><div class="insight-title">可靠性 pass^4</div><div class="insight-desc">每个模型-任务运行四次，分析稳定成功率而非单次最佳表现。</div></div>
+          <div class="insight-card reveal"><div class="insight-num">A6</div><div class="insight-title">人类基线差距</div><div class="insight-desc">对照研究人员子集表现，判断任务是否位于合理研究构念范围内。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="methodology">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-kicker">Methodology</div>
+            <h2 class="section-title">与论文结构一致的构建流程</h2>
+          </div>
+          <p class="section-desc">从真实材料到冻结评测任务，构建期完成主观判断，评测期保持自动化与可复现。</p>
+        </div>
+        <div class="method-grid reveal">
+          <div class="method-step"><div class="method-num">01</div><div class="method-title">源材料收集</div><div class="method-desc">规范、论文、安全分析报告、可执行工件、失败日志和中间证据。</div></div>
+          <div class="method-step"><div class="method-num">02</div><div class="method-title">候选任务抽取</div><div class="method-desc">记录来源、认知动作、题型、内容标签、预期产物和保真风险。</div></div>
+          <div class="method-step"><div class="method-num">03</div><div class="method-title">任务规范化</div><div class="method-desc">重写 prompt，确定产物 schema，冻结 hidden labels 与 acceptable sets。</div></div>
+          <div class="method-step"><div class="method-num">04</div><div class="method-title">验证器构造</div><div class="method-desc">Schema、label/set matcher、executable oracle、coverage 和 evidence checker。</div></div>
+          <div class="method-step"><div class="method-num">05</div><div class="method-title">专家审核校准</div><div class="method-desc">至少两名专家审核标签、难度、保真边界，并用正负例校准验证器。</div></div>
+          <div class="method-step"><div class="method-num">06</div><div class="method-title">版本发布评分</div><div class="method-desc">Public Dev 调试，Private Active 排榜，按 S_task、pass^4 和 S_leader 聚合。</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>CryptoBench-SC · 对称密码分析智能体基准</div>
+      <ul class="footer-links">
+        <li><a href="#scope">范围</a></li>
+        <li><a href="#tasks">题型</a></li>
+        <li><a href="#leaderboard">排行榜</a></li>
+        <li><a href="#methodology">方法</a></li>
+      </ul>
+    </div>
+  </footer>
+</div>
+
+<script>
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.documentElement.classList.add('js-ready');
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.14 });
+document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+
+(function pointerAtmosphere() {
+  if (reduceMotion) return;
+  const root = document.documentElement;
+  let tx = window.innerWidth / 2;
+  let ty = window.innerHeight / 2;
+  let cx = tx;
+  let cy = ty;
+
+  function updatePointer(x, y) {
+    tx = x;
+    ty = y;
+  }
+
+  window.addEventListener('pointermove', (event) => {
+    updatePointer(event.clientX, event.clientY);
+  }, { passive: true });
+
+  window.addEventListener('pointerleave', () => {
+    updatePointer(window.innerWidth / 2, window.innerHeight / 2);
+  });
+
+  function frame() {
+    cx += (tx - cx) * 0.08;
+    cy += (ty - cy) * 0.08;
+    const nx = (cx / window.innerWidth - 0.5) * 2;
+    const ny = (cy / window.innerHeight - 0.5) * 2;
+    root.style.setProperty('--mx', `${cx}px`);
+    root.style.setProperty('--my', `${cy}px`);
+    root.style.setProperty('--tilt-x', `${(ny * 5).toFixed(2)}deg`);
+    root.style.setProperty('--tilt-y', `${(nx * 5).toFixed(2)}deg`);
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+
+(function cardLighting() {
+  if (reduceMotion) return;
+  const cards = document.querySelectorAll('.scope-card, .task-card, .insight-card, .package-card, .package-point, .statement, .artifact, .method-step, .chart-panel, .legend-panel, .leaderboard-shell');
+  cards.forEach((card) => {
+    card.addEventListener('pointermove', (event) => {
+      const rect = card.getBoundingClientRect();
+      const px = ((event.clientX - rect.left) / rect.width) * 100;
+      const py = ((event.clientY - rect.top) / rect.height) * 100;
+      const rx = ((event.clientY - rect.top) / rect.height - 0.5) * -5;
+      const ry = ((event.clientX - rect.left) / rect.width - 0.5) * 5;
+      card.style.setProperty('--card-x', `${px}%`);
+      card.style.setProperty('--card-y', `${py}%`);
+      if (!card.matches('.leaderboard-shell')) {
+        card.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-3px)`;
+      }
+    });
+    card.addEventListener('pointerleave', () => {
+      card.style.removeProperty('transform');
+    });
+  });
+})();
+
+(function heroBackground() {
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas || reduceMotion) return;
+  const ctx = canvas.getContext('2d');
+  const glyphs = ['S', 'P', 'N', 'IR', 'MILP', 'SAT', 'DDT', 'XOR', 'CP', 'T5'];
+  let nodes = [];
+  let width = 0;
+  let height = 0;
+  let last = 0;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    width = rect.width;
+    height = rect.height;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    nodes = Array.from({ length: Math.min(58, Math.floor(width / 22)) }, (_, i) => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.32,
+      vy: (Math.random() - 0.5) * 0.22,
+      label: glyphs[i % glyphs.length],
+      phase: Math.random() * Math.PI * 2
+    }));
+  }
+
+  function draw(t) {
+    if (t - last < 30) {
+      requestAnimationFrame(draw);
+      return;
+    }
+    last = t;
+    ctx.clearRect(0, 0, width, height);
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, 'rgba(95,150,255,0.10)');
+    gradient.addColorStop(0.5, 'rgba(125,211,252,0.04)');
+    gradient.addColorStop(1, 'rgba(245,193,108,0.04)');
+
+    nodes.forEach((n) => {
+      n.x += n.vx;
+      n.y += n.vy;
+      n.phase += 0.018;
+      if (n.x < -30) n.x = width + 30;
+      if (n.x > width + 30) n.x = -30;
+      if (n.y < -30) n.y = height + 30;
+      if (n.y > height + 30) n.y = -30;
+    });
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 150) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(95,150,255,${(1 - dist / 150) * 0.14})`;
+          ctx.lineWidth = 0.65;
+          ctx.stroke();
+        }
+      }
+    }
+
+    nodes.forEach((n, i) => {
+      const pulse = 0.45 + Math.sin(n.phase) * 0.25;
+      ctx.fillStyle = i % 5 === 0 ? `rgba(245,193,108,${pulse})` : `rgba(237,242,251,${0.28 + pulse * 0.28})`;
+      ctx.font = i % 3 === 0 ? '700 11px Menlo, monospace' : '600 10px Menlo, monospace';
+      ctx.fillText(n.label, n.x, n.y);
+      ctx.beginPath();
+      ctx.arc(n.x - 8, n.y - 4, 1.4, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(draw);
+})();
+
+(function radarChart() {
+  const canvas = document.getElementById('radarChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const labels = ['T1 理解', 'T2 还原', 'T3 规划', 'T4 实现', 'T5 修复'];
+  const expert = { name: 'Human Expert', data: [91.4, 85.2, 86.1, 79.6, 75.8], color: '#cbd5e1' };
+  const models = [
+    { data: [66.5, 49.1, 43.7, 38.2, 24.3], color: '#5f96ff' },
+    { data: [62.7, 46.8, 39.5, 41.1, 28.7], color: '#9be7c1' },
+    { data: [55.2, 39.4, 32.8, 33.6, 19.4], color: '#f5c16c' },
+    { data: [51.7, 32.6, 29.1, 10.3, 7.9], color: '#f59d9d' }
+  ];
+  let active = 0;
+
+  function hexToRgb(hex, alpha) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function drawPoly(cx, cy, radius, dataset, alpha) {
+    ctx.beginPath();
+    dataset.data.forEach((v, i) => {
+      const angle = Math.PI * 2 * i / labels.length - Math.PI / 2;
+      const x = cx + Math.cos(angle) * radius * v / 100;
+      const y = cy + Math.sin(angle) * radius * v / 100;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = hexToRgb(dataset.color, alpha);
+    ctx.strokeStyle = dataset.color;
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const size = canvas.clientWidth || 500;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2;
+    const cy = size / 2;
+    const radius = size * 0.34;
+
+    for (let level = 1; level <= 4; level++) {
+      const r = radius * level / 4;
+      ctx.beginPath();
+      labels.forEach((_, i) => {
+        const angle = Math.PI * 2 * i / labels.length - Math.PI / 2;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      });
+      ctx.closePath();
+      ctx.strokeStyle = level === 4 ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    labels.forEach((label, i) => {
+      const angle = Math.PI * 2 * i / labels.length - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.stroke();
+      ctx.fillStyle = '#99a6ba';
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx + Math.cos(angle) * (radius + 34), cy + Math.sin(angle) * (radius + 34));
+    });
+
+    drawPoly(cx, cy, radius, expert, 0.06);
+    drawPoly(cx, cy, radius, models[active], 0.16);
+  }
+
+  document.querySelectorAll('.legend-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.legend-item').forEach((el) => el.classList.remove('active'));
+      item.classList.add('active');
+      active = Number(item.dataset.model);
+      draw();
+    });
+  });
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+</body>
+</html>
